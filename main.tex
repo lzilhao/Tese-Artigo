@@ -85,7 +85,7 @@
 
 \section{Solution}
 
-To solve these issues, we propose a modular architecture from which will stem a unified platform in which the benchmarks can be run. The main benefits of such a platform are twofold: to provide a common ground in which the middlewares can be benchmarked to ensure equal an playing field, and to ease the addition of other subsequent middlewares. This is achieved by factoring the common elements that go in the creation of any benchmarking application.
+To solve these issues, we propose a modular architecture from which will stem a unified platform in which the benchmarks can be run. The main benefits of such a platform are twofold: to provide a common ground in which the middlewares can be benchmarked to ensure equal an playing field, and to ease the addition of other subsequent middlewares. This is achieved by factoring the common elements that go in the creation of any benchmarking application. The main building blocks of our architecture are visible in figure~\ref{fig:main_building_blocks}.
 
 \begin{figure}[htbp!]
   \centering
@@ -93,7 +93,22 @@ To solve these issues, we propose a modular architecture from which will stem a 
   \caption{Main architecture building blocks}
   \label{fig:main_building_blocks}
 \end{figure}
-%
+
+The goal is to only implement what is necessary for a new entry in the benchmarking platform instead of using a similar implementation for each one. We propose a communication block where the communication protocols are lodged, such as HTTP or CoAP, and each has the methods implemented, such as POST or GET, so that they are totally platform independent and can be reused. If a new protocol is required to be added to the platform, its methods can be implemented without interfering with the remaining structure.
+
+The data block is where the middleware specific functions reside, and each of these is responsible for implementing its data structure and bridging the gap to the protocols. Similarly to the data block, it is designed so that each is independent so that all can use the same communication methods implemented in the communication block. With a new entry, one can observe how the existing ones are structured, thereby speeding up the process and keeping it isolated without interfering with the existing setup. 
+
+The load block will enable different types of IoT scenarios to be programmed and dynamically changed, so that we can attempt to mimic real world scenarios such as Smart Cities. Again, this should be independent from each of the other blocks so that the same workloads can be used throughout all middlewares and protocols, providing a basis for comparison and ensuring high flexibility.
+
+Each building block will have several sub-blocks, which will correspond to a given class. In an initial phase, we attempted to create an application to benchmark the OM2M with a basis on the work conducted in~\cite{pereira_benchmarking_2018} and \cite{cardoso_benchmarking_2017} , while keeping it as generic as possible to enable future middleware additions and follow our architecture guidelines. This resulted in the structure visible in
+
+\begin{figure}[htbp!]
+  \centering
+  \includegraphics[width=\linewidth]{figures/class_diagram.eps}
+  \caption{Class diagram for the initial platform stage}
+  \label{fig:class_diagram_om2m}
+\end{figure}
+
 \section{Evaluation}
 
 
@@ -124,8 +139,8 @@ To solve these issues, we propose a modular architecture from which will stem a 
 % set second argument of \begin to the number of references
 % (used to reserve space for the reference number labels box)
 
-%\bibliographystyle{unsrt}
-%\bibliography{biblio}
+\bibliographystyle{unsrt}
+\bibliography{biblio}
 
 
 % that's all folks
