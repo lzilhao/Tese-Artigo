@@ -53,6 +53,53 @@
 \usepackage{url}
 \usepackage{hyperref}
 \usepackage{graphicx}
+% Packages for listings and color for code excerpts
+\usepackage{listings}
+\usepackage{color}
+\definecolor{shadecolor}{rgb}{.9, .9, .9}
+
+% stuff for nice looking JSON
+\usepackage{xcolor}
+
+\colorlet{punct}{red!60!black}
+\definecolor{background}{HTML}{EEEEEE}
+\definecolor{delim}{RGB}{20,105,176}
+\colorlet{numb}{magenta!60!black}
+
+\lstdefinelanguage{json}{
+    basicstyle=\normalfont\ttfamily,
+    numbers=left,
+    numberstyle=\scriptsize,
+    stepnumber=1,
+    numbersep=8pt,
+    showstringspaces=false,
+    breaklines=true,
+    frame=lines,
+    backgroundcolor=\color{background},
+    literate=
+     *{0}{{{\color{numb}0}}}{1}
+      {1}{{{\color{numb}1}}}{1}
+      {2}{{{\color{numb}2}}}{1}
+      {3}{{{\color{numb}3}}}{1}
+      {4}{{{\color{numb}4}}}{1}
+      {5}{{{\color{numb}5}}}{1}
+      {6}{{{\color{numb}6}}}{1}
+      {7}{{{\color{numb}7}}}{1}
+      {8}{{{\color{numb}8}}}{1}
+      {9}{{{\color{numb}9}}}{1}
+      {:}{{{\color{punct}{:}}}}{1}
+      {,}{{{\color{punct}{,}}}}{1}
+      {\{}{{{\color{delim}{\{}}}}{1}
+      {\}}{{{\color{delim}{\}}}}}{1}
+      {[}{{{\color{delim}{[}}}}{1}
+      {]}{{{\color{delim}{]}}}}{1},
+}
+
+\lstdefinestyle{mystyle}{
+    %backgroundcolor=\color{shadecolor},
+    %basicstyle=\ttfamily
+    %basicstyle=\ttfamily\scriptsize
+}
 
 
 % acckorrect bad hyphenation here
@@ -100,7 +147,7 @@ The data block is where the middleware specific functions reside, and each of th
 
 The load block will enable different types of IoT scenarios to be programmed and dynamically changed, so that we can attempt to mimic real world scenarios such as Smart Cities. Again, this should be independent from each of the other blocks so that the same workloads can be used throughout all middlewares and protocols, providing a basis for comparison and ensuring high flexibility.
 
-Each building block will have several sub-blocks, which will correspond to a given class. In an initial phase, we attempted to create an application to benchmark the OM2M with a basis on the work conducted in~\cite{pereira_benchmarking_2018} and \cite{cardoso_benchmarking_2017} , while keeping it as generic as possible to enable future middleware additions and follow our architecture guidelines. This resulted in the structure visible in
+Each building block will have several sub-blocks, which will correspond to a given class. In an initial phase, we attempted to create an application to benchmark the OM2M middleware with a basis on the work conducted in~\cite{pereira_benchmarking_2018} and \cite{cardoso_benchmarking_2017} , while keeping it as generic as possible to enable future middleware additions and follow our architecture guidelines. This resulted in the structure visible in~\ref{fig:class_diagram_om2m}.
 
 \begin{figure}[htbp!]
   \centering
@@ -108,6 +155,30 @@ Each building block will have several sub-blocks, which will correspond to a giv
   \caption{Class diagram for the initial platform stage}
   \label{fig:class_diagram_om2m}
 \end{figure}
+
+The main class is responsible for the load and most of the measurements. The load will consist of a certain number of publishes, with a certain message, at a given throughput. All can be easily defined by the user. It's implemented by way of a loop, with each cycle corresponding to a publish request, with sleeps in between to limit the throughput.
+
+\begin{figure}[htbp!]
+  \centering
+  \includegraphics[width=\linewidth]{figures/pub_sub_time.eps}
+  \caption{Publish and subscribe times~\cite{cardoso_benchmarking_2017}}
+  \label{fig:pub_sub_time}
+\end{figure}
+
+The metrics currently implemented on are publish and subscribe time, both visible in~\ref{fig:pub_sub_time}, goodput, failed and successful publishes. Each publish time is simply the difference between sending the request and receiving the response from the broker, easily implemented in the main class by measuring the elapsed time of a single cycle in the load loop. Goodput is measured by dividing the useful bytes of each message by each publish time. The useful bytes correspond to the full message that is assembled by each middleware. Let's take the Om2m class as an example. Here, a publish request corresponds to the creation of a content instance of the container where we wish to publish. Therefore, the \textbf{createContentInstance()} method will take the message as input and create the appropriate data structure, such as in~\ref{lst:application_creation} for creating an application, to be sent as payload for a certain protocol, e.g., HTTP\@.
+
+\begin{lstlisting}[linewidth=\columnwidth, caption=JSON payload for application creation, captionpos=b, label=lst:application_creation, language=json]
+{
+   "m2m:ae": {
+     "api": "app-sensor",
+     "rr": "false",
+     "lbl": ["Type/sensor", "Category/temperature", "Location/home"],
+     "rn": "MY_SENSOR"
+   }
+}
+\end{lstlisting}
+
+This will be returned to the calling publish method, in order for it to know the payload size for that particular middleware publish request. Since this class extends the \textbf{middleware} superclass, this method is always present and always has the same return values, providing generic metrics. 
 
 \section{Evaluation}
 
@@ -151,10 +222,4 @@ Each building block will have several sub-blocks, which will correspond to a giv
 %%% mode: latex
 %%% TeX-master: t
 %%% End:
-=======
-\documentclass{article}
-\usepackage[utf8]{inputenc}
-\begin{document}
-(Type your content here.)
-\end{document}
->>>>>>> f2e640db19cf7ec24c539f6c2c2fad5a3c77c44d
+
