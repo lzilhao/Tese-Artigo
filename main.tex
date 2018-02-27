@@ -126,28 +126,37 @@
 
 \section{Introduction}
 
+Middlewares in IoT aim to bridge the gap between the data producers and the data consumers.
+With the rise of the Internet of Things, comes the need for different applications, and different services with different requirements. Each of these applications will ideally want its own middleware and sensor network so that they can be suited perfectly to their needs. In practical terms this is not possible, as it would be a waste of resources. Therefore, applications will need to work with existing sensor networks and will either develop its own middleware, or choose an existing one that better suits their needs. The question then becomes: how to choose the best one for the task at hand? There are a great number~\cite{razzaque_middleware_2016} of available middlewares to choose from, which makes the selection process very time-consuming. A comparison must be made between them to evaluate which is better suited for which task. But then comes the problem of how to make the evaluation, as performance measuring is not trivial, and common ground must exist for the comparison to be valid. Furthermore, since we have a great number of middlewares, ensuring such common ground will not be possible across different experiments, and different researchers. From these difficulties arises the need for such common ground, a platform that enables multiple comparisons across different middlewares in an efficient manner. To solve these issues, we propose a modular architecture from which will stem a unified platform in which the benchmarks can be run. The main benefits of such a platform are twofold: to provide a common ground in which the middlewares can be benchmarked to ensure equal an playing field, and to ease the addition of other subsequent middlewares.  
+
 
 \section{Related work}
 
 
 \section{Solution}
 
-To solve these issues, we propose a modular architecture from which will stem a unified platform in which the benchmarks can be run. The main benefits of such a platform are twofold: to provide a common ground in which the middlewares can be benchmarked to ensure equal an playing field, and to ease the addition of other subsequent middlewares. This is achieved by factoring the common elements that go in the creation of any benchmarking application. The main building blocks of our architecture are visible in figure~\ref{fig:main_building_blocks}.
+\subsection{Modular Architecture}
+
+In order to achieve the aforementioned requirements, we aim to create a modular architecture by factoring the common elements that go in the creation of any benchmarking application. The general plan for our architecture can be seen in~\ref{fig:benchmark_architecture}.
 
 \begin{figure}[htbp!]
   \centering
-  \includegraphics[width=\linewidth]{figures/benchmark_blocks.eps}
+  \includegraphics[width=\linewidth]{figures/benchmark_architecture.eps}
   \caption{Main architecture building blocks}
-  \label{fig:main_building_blocks}
+  \label{fig:benchmark_architecture}
 \end{figure}
 
-The goal is to only implement what is necessary for a new entry in the benchmarking platform instead of using a similar implementation for each one. We propose a communication block where the communication protocols are lodged, such as HTTP or CoAP, and each has the methods implemented, such as POST or GET, so that they are totally platform independent and can be reused. If a new protocol is required to be added to the platform, its methods can be implemented without interfering with the remaining structure.
+A user must be able to simply swap instances of the block as required. To achieve this, we defined a set of inputs and outputs for each one to maintain modularity. 
 
-The data block is where the middleware specific functions reside, and each of these is responsible for implementing its data structure and bridging the gap to the protocols. Similarly to the data block, it is designed so that each is independent so that all can use the same communication methods implemented in the communication block. With a new entry, one can observe how the existing ones are structured, thereby speeding up the process and keeping it isolated without interfering with the existing setup. 
+The load block will enable different types of IoT scenarios to be programmed and dynamically changed, so that we can attempt to mimic real world scenarios such as Smart Cities. Again, this should be independent from each of the other blocks so that the same workloads can be used throughout all middlewares and protocols, providing a basis for comparison and ensuring high flexibility. 
 
-The load block will enable different types of IoT scenarios to be programmed and dynamically changed, so that we can attempt to mimic real world scenarios such as Smart Cities. Again, this should be independent from each of the other blocks so that the same workloads can be used throughout all middlewares and protocols, providing a basis for comparison and ensuring high flexibility.
+The data block is where the middleware specific functions reside, and each of these is responsible for implementing its data structure and bridging the gap to the protocols. Similarly to the data block, it is designed so that each is independent so that all can use the same communication methods implemented. With a new middleware entry, one can observe how the existing functions are structured, thereby speeding up the process of implementing its methods. This entry will be added as a new instance of the data block so as to not interfere with the previous middlewares.
 
-Each building block will have several sub-blocks, which will correspond to a given class. In an initial phase, we attempted to create an application to benchmark the OM2M middleware with a basis on the work conducted in~\cite{pereira_benchmarking_2018} and \cite{cardoso_benchmarking_2017} , while keeping it as generic as possible to enable future middleware additions and follow our architecture guidelines. This resulted in the structure visible in~\ref{fig:class_diagram_om2m}.
+Next, we have the communication block where the protocols are lodged, such as HTTP or CoAP, and each has its methods implemented, e.g., POST or GET, so that they are totally platform independent and can be reused. If a new protocol is required to be added to the platform, its methods can be implemented without interfering with the remaining structure.
+
+\subsection{OM2M Implementation}
+
+In an initial phase, we attempted to create an application to benchmark the OM2M middleware with a basis on the work conducted in~\cite{pereira_benchmarking_2018} and \cite{cardoso_benchmarking_2017}, while keeping it as generic as possible to enable future middleware additions and follow our architecture guidelines. This resulted in the structure visible in~\ref{fig:class_diagram_om2m}.
 
 \begin{figure}[htbp!]
   \centering
@@ -190,6 +199,9 @@ Then, we come to the protocol classes. Currently, only HTTP is implemented in th
 
 \section{Evaluation}
 
+\subsection{Benchmarking results}
+
+\subsection{Adding a new middleware}
 
 \section{Conclusion}
 
