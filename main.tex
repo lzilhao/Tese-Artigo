@@ -67,7 +67,7 @@
 \colorlet{numb}{magenta!60!black}
 
 \lstdefinelanguage{json}{
-    basicstyle=\normalfont\ttfamily,
+    basicstyle=\scriptsize\ttfamily,
     numbers=left,
     numberstyle=\scriptsize,
     stepnumber=1,
@@ -95,12 +95,27 @@
       {]}{{{\color{delim}{]}}}}{1},
 }
 
-\lstdefinestyle{mystyle}{
-    %backgroundcolor=\color{shadecolor},
-    %basicstyle=\ttfamily
-    %basicstyle=\ttfamily\scriptsize
+\definecolor{javared}{rgb}{0.6,0,0} % for strings
+\definecolor{javagreen}{rgb}{0.25,0.5,0.35} % comments
+\definecolor{javapurple}{rgb}{0.5,0,0.35} % keywords
+\definecolor{javadocblue}{rgb}{0.25,0.35,0.75} % javadoc
+ 
+\lstset{language=Java,
+  basicstyle=\scriptsize\ttfamily,
+  numbers=left,
+  numberstyle=\scriptsize,
+  stepnumber=1,
+  numbersep=8pt,
+  showstringspaces=false,
+  breaklines=true,
+  frame=lines,
+  backgroundcolor=\color{background},
+  keywordstyle=\color{javapurple}\bfseries,
+  stringstyle=\color{javared},
+  commentstyle=\color{javagreen},
+  morecomment=[s][\color{javadocblue}]{/**}{*/},
 }
-
+                
 
 % acckorrect bad hyphenation here
 \hyphenation{op-tical net-works semi-conduc-tor}
@@ -203,6 +218,30 @@ Then, we come to the protocol classes. Currently, only HTTP is implemented in th
 \subsection{Benchmarking results}
 
 \subsection{Adding a new middleware}
+
+The platform development was always conducted taking into account the addition of new middlewares, therefore it was made to be as generic as possible and to facilitate any new addition. However, during such an addition, there can always be details which were not accounted for and can force the platform to change to be able to accommodate this new addition. In this section, we will see the changes to the architecture, and the differences and similarities between the both implementations, how much was reusable in terms of code and overall structure, and attempt to quantify the changes through the number of lines of code. 
+
+We decided to add the FIWARE middleware as a result of previous work and greater familiarity with it. The class diagram is similar to that in figure~\ref{fig:class_diagram_om2m}, with the difference being the new Fiware class, visible in~\ref{fig:class_diagram_fiware}.
+
+\begin{figure}[htbp!]
+  \centering
+  \includegraphics[width=0.5\columnwidth]{figures/class_diagram_fiware.eps}
+  \caption{Fiware class diagram}
+  \label{fig:class_diagram_fiware}
+\end{figure}
+
+Since it is also an extension of the \textbf{Middleware} superclass, it shares the five methods and attributes with \textbf{Om2m}, with the rest being specific the this class, with a similar structure. The superclass methods will call the specific functions to bridge the gap to the communication protocol, in this case HTTP. Starting with \textbf{publish()}, the structure is basically identical, with only 4 lines of code being different between both middlewares out of 22, which merely correspond to differing function calls and variable names. A Om2m publish calls upon the \textbf{createContentInstance()} function to create a new instance in a previously created container in an application, receiving the intended message and constructing a JSON payload in accordance to its standards, and sending it via an HTTP POST. Similarly, Fiware uses the \textbf{updateEntity()} method to update the current status of an entity, also constructing an appropriate JSON, but sending it with an HTTP PATCH. A key detail to note here, is that using this method, Fiware does not retain memory of previous status, as it is overwritten. Both of these methods return the JSON payloads and the HTTP response, and register the times at which the publishes were sent. The \textbf{subscribe()} method in both implementations is similar to this, but Fiware also uses HTTP POST as opposed to a PATCH request.
+
+The \textbf{listen()} function is the same in both, as it only creates an HTTP server for the subscriber to listen and parse the notifications.
+
+Next, we have \textbf{destroy()} which aims to delete all the created resources so that it is easy to start from scratch. For this, Om2m calls \textbf{deleteApplication()} which takes the name of the resource to be deleted, constructs the JSON payload and POSTs it to the broker. For Fiware its \textbf{deleteEntity()}, and it works much the same, the only change being the JSON created.
+
+Finally we have \textbf{createInitialSetup()}, where resources are registered for the first time. For Om2m, a nested \textbf{for} loop is used to create the desired number of applications with \textbf{createApplication()}, and for each of these the number of containers with \textbf{createContainer()}. For Fiware, the number of attributes must be defined upon entity creation, so these are handled on a lower level at the \textbf{createEntity()} method, so only a simple \textbf{for} loop is used to create the necessary entities.
+
+Almost all functions used share the same structure: create the JSON to encapsulate the message, create the appropriate HTTP headers and make the HTTP request to the broker. This greatly eases the process of adding middlewares.
+
+
+
 
 \section{Conclusion}
 
