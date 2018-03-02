@@ -217,6 +217,24 @@ Then, we come to the protocol classes. Currently, only HTTP is implemented in th
 
 \subsection{Benchmarking results}
 
+The goal here is not to use the results to evaluate the performance of the platform, or to make a comparison between other middlewares. Rather, we want to use the results to validate the platform itself, and show what types of information we can extract from these tests, while still keeping the platform generic.
+
+The test consisted of 20000 publishes of 15 byte messages, at a rate of 100 publishes per second. For OM2M, the publish time results can be seen in~\ref{fig:om2m_publish_times}, and the subscribe times in~\ref{fig:om2m_subscribe_times}. 
+
+\begin{figure}[htbp!]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/om2m_publish_times.png}
+  \caption{OM2M publish times}
+  \label{fig:om2m_publish_times}
+\end{figure}
+
+\begin{figure}[htbp!]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/om2m_subscribe_times.png}
+  \caption{OM2M subscribe times}
+  \label{fig:om2m_subscribe_times}
+\end{figure}
+
 \subsection{Adding a new middleware}
 
 The platform development was always conducted taking into account the addition of new middlewares, therefore it was made to be as generic as possible and to facilitate any new addition. However, during such an addition, there can always be details which were not accounted for and can force the platform to change to be able to accommodate this new addition. In this section, we will see the changes to the architecture, and the differences and similarities between the both implementations, how much was reusable in terms of code and overall structure, and attempt to quantify the changes through the number of lines of code. 
