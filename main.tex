@@ -181,7 +181,7 @@ In an initial phase, we attempted to create an application to benchmark the OM2M
   \label{fig:class_diagram_om2m}
 \end{figure}
 
-The main class is responsible for the load and most of the measurements. The load will consist of a certain number of publishes, with a certain message, at a given throughput. All can be easily defined by the user. It's implemented by way of a loop, with each cycle corresponding to a publish request, with sleeps in between to limit the throughput.
+Since the load class will be performing the actual requests, it will also call upon the metrics class to perform get the results from the measurements. The load will consist of a certain number of publishes, with a certain message, at a given throughput. All can be easily defined by the user. It's implemented by way of a loop, with each cycle corresponding to a publish request, with sleeps in between to limit the throughput.
 
 \begin{figure}[htbp!]
   \centering
@@ -215,29 +215,11 @@ Then, we come to the protocol classes. Currently, only HTTP is implemented in th
 
 \section{Evaluation}
 
-\subsection{Benchmarking results}
-
-The goal here is not to use the results to evaluate the performance of the platform, or to make a comparison between other middlewares. Rather, we want to use the results to validate the platform itself, and show what types of information we can extract from these tests, while still keeping the platform generic.
-
-The test consisted of 20000 publishes of 15 byte messages, at a rate of 100 publishes per second. For OM2M, the publish time results can be seen in~\ref{fig:om2m_publish_times}, and the subscribe times in~\ref{fig:om2m_subscribe_times}. 
-
-\begin{figure}[htbp!]
-  \centering
-  \includegraphics[width=\columnwidth]{figures/om2m_publish_times.png}
-  \caption{OM2M publish times}
-  \label{fig:om2m_publish_times}
-\end{figure}
-
-\begin{figure}[htbp!]
-  \centering
-  \includegraphics[width=\columnwidth]{figures/om2m_subscribe_times.png}
-  \caption{OM2M subscribe times}
-  \label{fig:om2m_subscribe_times}
-\end{figure}
-
-\subsection{Adding a new middleware}
+\subsection{Adding new middlewares}
 
 The platform development was always conducted taking into account the addition of new middlewares, therefore it was made to be as generic as possible and to facilitate any new addition. However, during such an addition, there can always be details which were not accounted for and can force the platform to change to be able to accommodate this new addition. In this section, we will see the changes to the architecture, and the differences and similarities between the both implementations, how much was reusable in terms of code and overall structure, and attempt to quantify the changes through the number of lines of code. 
+
+\subsubsection{FIWARE}
 
 We decided to add the FIWARE middleware as a result of previous work and greater familiarity with it. The class diagram is similar to that in figure~\ref{fig:class_diagram_om2m}, with the difference being the new Fiware class, visible in~\ref{fig:class_diagram_fiware}.
 
@@ -258,6 +240,59 @@ Finally we have \textbf{createInitialSetup()}, where resources are registered fo
 
 Almost all functions used share the same structure: create the JSON to encapsulate the message, create the appropriate HTTP headers and make the HTTP request to the broker. This greatly eases the process of adding middlewares.
 
+\subsubsection{Ponte}
+
+As before, there is an URI identifier and two variables that indicate how many resources and attributes per resource this middleware instance will take. With Ponte, only the \textbf{publish()} and createInitialSetup methods from the \textbf{Middleware} superclass was implemented. The reason for this is that there was no need to create an additional abstraction layer between the the middleware specific methods and the publish method as before with other implementations, since a simple HTTP PUT is required with the target resource and attribute in the URL, and the value as payload, without any need for JSON or XML assembly.
+
+\textbf{subscribe()} and \textbf{listen()} were not implemented as there is no way for the broker to notify a subscriber through HTTP, only through GETs originating from the subscriber, which would require periodic queries in order to keep the status updated and differs from a publish/subscribe scenario.
+
+There is no obvious way of deleting a resource so \textbf{destroy} is also not implemented, with the most obvious way to do so being simply to restart the broker. 
+
+\subsection{Benchmarking results}
+
+The goal here is not to use the results to evaluate the performance of the platform, or to make a comparison between other middlewares. Rather, we want to use the results to validate the platform itself, and show what types of information we can extract from these tests, while still keeping the platform generic.
+
+The test consisted of 20000 publishes of 15 byte messages, at a rate of 100 publishes per second. In~\ref{fig:publish_times} we can see a comparison between the publish times of all three implemented middlewares. In~\ref{fig:subscribe_times} only FIWARE and OM2M are present, as it is not possible to measure the subscribe times with Ponte using HTTP. 
+
+\begin{figure}[htbp!]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/om2m_fiware_ponte_publish_times.png}
+  \caption{OM2M publish times}
+  \label{fig:publish_times}
+\end{figure}
+
+\begin{figure}[htbp!]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/om2m_fiware_subscribe_times.png}
+  \caption{OM2M subscribe times}
+  \label{fig:subscribe_times}
+\end{figure}
+
+A few extra metrics are available for each of them, being those the Goodput, total publish time, number of failed and successful publishes.
+
+\subsubsection{FIWARE}
+\begin{itemize}
+\item Goodput: 3.54 KB/s
+\item Failed publishes: 0
+\item Successful Publishes: 20000
+\item Total publish time: 602 seconds
+\end{itemize}
+
+\subsubsection{OM2M}
+\begin{itemize}
+\item Goodput: 4.15 KB/s
+\item Failed publishes: 0
+\item Successful Publishes: 20000
+\item Total publish time: 655 seconds
+\end{itemize}
+
+\subsubsection{Ponte}
+\begin{itemize}
+\item Goodput: 1.33 KB/s
+\item Failed publishes: 0
+\item Successful Publishes: 20000
+\item Total publish time: 535 seconds
+\end{itemize}
 
 
 
