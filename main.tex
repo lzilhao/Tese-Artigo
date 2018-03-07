@@ -146,6 +146,9 @@ Middlewares in IoT aim to bridge the gap between the data producers and the data
 
 \section{Related work}
 
+In \cite{cardoso_benchmarking_2017} the goal was to obtain a set of qualitative and quantitative metrics that are suited for IoT middleware benchmarking and develop a test methodology around those metrics. Following this, they were able to use said methodology by making a comparison of two IoT middleware platforms, FIWARE~\cite{FIWARE27:online} and ETSI M2M~\cite{ETSIWelc14:online}. They used a smart cities scenario, fairly common in IoT, which typically use the publish-subscribe communication model. The platforms themselves were treated as black-boxes, disregarding information about internal implementation. This eases not only the process, but also the creation of a common benchmarking platform. This can cause the middleware to be used sub-optimally, but is a necessary step in an effort to generalize the process, and should also be the most common situation in real world usage. A qualitative analysis was conducted with the goal of identifying certain middleware functionalities which are relevant for IoT applications and ease their development, such as documentation availability and which communication models are supported. This type of analysis and metrics requires a case-by-case look on each of the platforms being compared, and while they cannot be implemented as part of a benchmarking platform, as they are not measurable automatically, they can still take part in the global architecture. A quantitative analysis was performed using specific metrics relevant for communications scenarios, particularly mass publication of resources using a publish-subscribe model, such as publish time, which is defined as the elapsed time since sending the HTTP request and receiving the HTTP response. Of course, the measurements are specific to this type of communication model and protocol, which we are trying to avoid in this paper, by providing general metrics that are protocol independent. For protocols that share a communication model, such as request-response, this should be relatively straightforward, but it could be more complicated in other cases, for instance with HTTP and MQTT.
+
+In \cite{pereira_benchmarking_2018}, the authors attempted to recreate and improve the previous experiment using a controlled environment, but using OM2M, which is an implementation of the oneM2M~\cite{oneM2MHo30:online} standards. A java application was created for each of the four setups they aimed to measure: Fiware, OM2M HTTP, OM2M CoAP, OM2M MQTT. They raise a few concerns which should be had when attempting the benchmarking process, such as where and how the data is published, which will mainly concern application development. This is a point which we want to address in this paper by developing a module for a certain middleware and re-utilizing it for subsequent measurements. Another question raised is the enabling of multi-connection capable clients, which might create an uneven playing field if different clients are used. With the creation of a unified platform, this will have to be taken into account for the client development. Finally the Java configurations, which address the issue of different optimizations with different default Java Virtual Machine packages, which might vary across operating system and also depending on if they are client or server VMs.
 
 \section{Solution}
 
@@ -163,7 +166,7 @@ In order to achieve the aforementioned requirements, we aim to create a modular 
 A user must be able to simply swap instances of a block as required. To achieve this, we defined a set of inputs and outputs for each one to maintain modularity. 
 
 The load block will enable different types of IoT scenarios to be programmed and dynamically changed, so that we can attempt to mimic real world scenarios such as Smart Cities. Again, this should be independent from each of the other blocks so that the same workloads can be used throughout all middlewares and protocols, providing a basis for comparison and ensuring high flexibility. 
-
+    
 The data block is where the middleware specific functions reside, and each of these is responsible for implementing its data structure and bridging the gap to the protocols. Similarly to the data block, it is designed so that each is independent so that all can use the same communication methods implemented. With a new middleware entry, one can observe how the existing functions are structured, thereby speeding up the process of implementing its methods. This entry will be added as a new instance of the data block so as to not interfere with the previous middlewares.
 
 Next, we have the communication block where the protocols are lodged, such as HTTP or CoAP, and each has its methods implemented, e.g., POST or GET, so that they are totally platform independent and can be reused. If a new protocol is required to be added to the platform, its methods can be implemented without interfering with the remaining structure.
@@ -294,7 +297,64 @@ A few extra metrics are available for each of them, being those the Goodput, tot
 \item Total publish time: 535 seconds
 \end{itemize}
 
+In order to better show the similarities between implementations, let's look at the publish methods themselves. In listing~\ref{lst:ponte_publish_method} we can see the \textbf{publish()} method for Ponte, and in~\ref{lst:fiware_publish_method} for FIWARE. 
 
+\begin{lstlisting}[caption=Publish method for Ponte, captionpos=b, label=lst:ponte_publish_method, language=java]
+public long[] publish(String message, String publishSequenceNumber) {
+	RestHttpClient client = new RestHttpClient();
+	long[] returnArray = new long[3];
+	Integer payloadSize = 0;
+	long elapsedTime = 0;
+	String payload = message + "-" + publishSequenceNumber;
+	payloadSize = payload.length();
+	long start = System.currentTimeMillis();
+	CloseableHttpResponse response = null;
+	response = client.put(this.uri + "/resources/" + "resource" + currentResource + "/" + "attribute" + currentAttribute, null, payload);
+	String publishResponseStatus = response.getStatusLine().toString();		
+	if (publishResponseStatus.contains("HTTP/1.1 2")) {
+		System.out.println("Successful publish ");
+		elapsedTime = System.currentTimeMillis() - start;
+	}
+	else {
+		System.out.println("Unsuccessful publish");
+		elapsedTime = -1;
+	}		
+	setNextPublishDestinationRoundRobin();
+	returnArray[0] = elapsedTime;
+	returnArray[1] = payloadSize;
+	returnArray[2] = start;
+	return returnArray;
+}
+\end{lstlisting}
+
+
+\begin{lstlisting}[caption=Publish method for FIWARE, captionpos=b, label=lst:fiware_publish_method, language=java]
+public long[] publish(String message, String publishSequenceNumber) {
+	long[] returnArray = new long[3];
+	Integer payloadSize = 0;
+	long elapsedTime = 0;
+	long start = System.currentTimeMillis();
+	String[] updateEntityReturn = null;
+	updateEntityReturn = updateEntity("entity" + currentEntity.toString(), "attribute_name" + currentAttribute.toString(), message + "-" + publishSequenceNumber);
+	payloadSize = updateEntityReturn[0].length();
+	String publishResponseStatus = updateEntityReturn[1];
+	if (publishResponseStatus.contains("HTTP/1.1 2")) {
+		System.out.println("Successful publish ");
+		elapsedTime = System.currentTimeMillis() - start;
+	}
+	else {
+		System.out.println("Unsuccessful publish");
+		elapsedTime = -1;
+	}		
+	setNextPublishDestinationRoundRobin();
+	returnArray[0] = elapsedTime;
+	returnArray[1] = payloadSize;
+	returnArray[2] = start;
+	return returnArray;
+}
+\end{lstlisting}
+
+The structure is basically identical, with the exception that Fiware calls an additional auxiliary method specific to it, \textbf{updateEntity()}, that assembles the JSON for the HTTP request that will execute the publish. Since Ponte does not need to assemble a payload in such a way, \textbf{put()} is called directly. This enabled an easy implementation for Ponte by simply analyzing what had been previously done for FIWARE, speeding up the process of adding a new middleware. 
 
 \section{Conclusion}
 
