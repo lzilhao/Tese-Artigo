@@ -321,11 +321,23 @@ In order to better show the similarities between implementations, let's look at 
   \label{fig:fiware_ponte_diff}
 \end{figure}
 
-The structure is basically identical, with the exception that Fiware calls an additional auxiliary method specific to it, \textbf{updateEntity()}, that assembles the JSON for the HTTP request that will execute the publish. Since Ponte does not need to assemble a payload in such a way, \textbf{put()} is called directly. This enabled an easy implementation for Ponte by simply analyzing what had been previously done for FIWARE, speeding up the process of adding a new middleware. 
+The structure is basically identical, with the exception that Fiware calls an additional auxiliary method specific to it, \textbf{updateEntity()}, that assembles the JSON for the HTTP request that will execute the publish. Since Ponte does not need to assemble a payload in such a way, \textbf{put()} is called directly. This enabled an easy implementation for Ponte by simply analyzing what had been previously done for FIWARE, speeding up the process of adding a new middleware.
+
+We can attempt to quantify the changes needed for a new implementation by looking at the lines of code. The distribution of lines per class is as follows:
+\begin{itemize}
+\item Main - 51
+\item Load - 119
+\item Middleware - 16
+\item Metrics - 136
+\item Ponte - 88
+\item Fiware - 193
+\item Om2m - 198
+\end{itemize}
+This brings a total of 801. At first glance, we can see that for the implementation of single middleware, the effort required can vary, with Ponte only needing 88 lines of new code. Nevertheless, there is a great deal that can be reused across all of them, greatly easing the process. However, as we have seen previously, not only are the structures similar, but some of the methods are similar as well, such as with the \textbf{publish()} methods between Ponte and Fiware.
 
 \section{Analysis for improvement}
 
-
+For the time being the platform is implemented so as to allow new middleware additions to be simple, but there are areas where we can modularize the structure even more. Taking again the example of figure~\ref{fig:fiware_ponte_diff}, we can see there are three distinct areas for a publish request: the assembly of the structure that will be sent, sending it using a certain communication protocol, and registering any relevant information from the response to implement metrics. Our goal is for this to become generic, so that only the structure assembly is required. 
 
 \section{Conclusion}
 
