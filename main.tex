@@ -122,7 +122,7 @@
 
 
 \begin{document}
-\title{}
+\title{IoT Middleware Benchmarking: A Scalable Architecture}
 
 
 % author names and affiliations
@@ -137,6 +137,7 @@
 % As a general rule, do not put math, special symbols or citations
 % in the abstract
 \begin{abstract}
+  
 \end{abstract}
 
 \section{Introduction}
@@ -243,6 +244,8 @@ Finally we have \textbf{createInitialSetup()}, where resources are registered fo
 
 Almost all functions used share the same structure: create the JSON to encapsulate the message, create the appropriate HTTP headers and make the HTTP request to the broker. This greatly eases the process of adding middlewares.
 
+But what if we wanted to use Fiware with memory? What changes would be required for it to work? This would come down to what the user interprets as a publish request. Since entities remain in memory after their creation, if we consider the creation of an entity as a request, then the only necessary change would be to use \textbf{createEntity()} in the publish method, instead of \textbf{updateEntity()}. This would also render \textbf{createInitialSetup()} unnecessary, as entities would not have to be created beforehand. 
+
 \subsubsection{Ponte}
 
 In~\ref{fig:class_diagram_ponte} we can see the class diagram for Ponte. Since it is another implementation of the middleware superclass, it shares the same methods, so they are not referenced in the image.
@@ -254,7 +257,7 @@ In~\ref{fig:class_diagram_ponte} we can see the class diagram for Ponte. Since i
   \label{fig:class_diagram_ponte}
 \end{figure}
 
-As before, there is an URI identifier and two variables that indicate how many resources and attributes per resource this middleware instance will take. With Ponte, only the \textbf{publish()} and createInitialSetup methods from the \textbf{Middleware} superclass was implemented. The reason for this is that there was no need to create an additional abstraction layer between the the middleware specific methods and the publish method as before with other implementations, since a simple HTTP PUT is required with the target resource and attribute in the URL, and the value as payload, without any need for JSON or XML assembly.
+As before, there is an URI identifier and two variables that indicate how many resources and attributes per resource this middleware instance will take. With Ponte, only the \textbf{publish()} and \textbf{createInitialSetup()} methods from the \textbf{Middleware} superclass was implemented. The reason for this is that there was no need to create an additional abstraction layer between the the middleware specific methods and the publish method as before with other implementations, since a simple HTTP PUT is required with the target resource and attribute in the URL, and the value as payload, without any need for JSON or XML assembly.
 
 \textbf{subscribe()} and \textbf{listen()} were not implemented as there is no way for the broker to notify a subscriber through HTTP, only through GETs originating from the subscriber, which would require periodic queries in order to keep the status updated and differs from a publish/subscribe scenario.
 
@@ -269,14 +272,14 @@ The test consisted of 20000 publishes of 22 byte messages, at a maximum rate of 
 \begin{figure}[htbp!]
   \centering
   \includegraphics[width=\columnwidth]{figures/om2m_fiware_ponte_publish_times.png}
-  \caption{OM2M publish times}
+  \caption{Publish times for all three middlewares with 22 byte messages}
   \label{fig:publish_times}
 \end{figure}
 
 \begin{figure}[htbp!]
   \centering
   \includegraphics[width=\columnwidth]{figures/om2m_fiware_subscribe_times.png}
-  \caption{OM2M subscribe times}
+  \caption{Subscribe times for Om2m and Fiware with 22 byte messages}
   \label{fig:subscribe_times}
 \end{figure}
 
@@ -312,12 +315,60 @@ A few extra metrics are available for each of them, being those the generated tr
 \item Size of the URL: 56 bytes
 \end{itemize}
 
+Changing parameters is merely altering the value of a few variables, depending on what the user wants. A second test was performed, using the same conditions as before, but with 10012 byte messages.
+
+\begin{figure}[htbp!]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/om2m_fiware_ponte_publish_times_10000.png}
+  \caption{Publish times for all three middlewares with 10012 byte messages}
+  \label{fig:publish_times_10000}
+\end{figure}
+
+\begin{figure}[htbp!]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/om2m_fiware_subscribe_times_10000.png}
+  \caption{Subscribe times for Om2m and Fiware with 10012 byte messages}
+  \label{fig:subscribe_times_10000}
+\end{figure}
+
+The application can easily handle even large messages sizes such as in~\ref{fig:publish_times_10000}. Again, the additional metrics generated were the following:
+
+\subsubsection{FIWARE}
+\begin{itemize}
+\item Generated traffic: 533.21 KB/s
+\item Failed publishes: 0
+\item Successful Publishes: 20000
+\item Total publish time: 380 seconds
+\item Size of a publish structure: 10060 bytes
+\item Size of the URL: 51 bytes
+\end{itemize}
+
+\subsubsection{OM2M}
+\begin{itemize}
+\item Generated traffic: 56.27 KB/s
+\item Failed publishes: 0
+\item Successful Publishes: 20000
+\item Total publish time: 3587 seconds
+\item Size of a publish structure: 10085 bytes
+\item Size of the URL: 58 bytes
+\end{itemize}
+
+\subsubsection{Ponte}
+\begin{itemize}
+\item Generated traffic: 756.53 KB/s
+\item Failed publishes: 0
+\item Successful Publishes: 20000
+\item Total publish time: 267 seconds
+\item Size of a publish structure: 10012 bytes
+\item Size of the URL: 56 bytes
+\end{itemize}
+
 In order to better show the similarities between implementations, let's look at the publish methods themselves. In figure~\ref{fig:fiware_ponte_diff} we can see a comparison between both implementations for each middleware. The highlighted lines correspond to the differences.
 
 \begin{figure}[htbp!]
   \centering
   \includegraphics[width=\columnwidth]{figures/fiware_ponte_diff.png}
-  \caption{Difference between Fiware (top) and Ponte (bottom) publis method}
+  \caption{Difference between Fiware (top) and Ponte (bottom) publish method}
   \label{fig:fiware_ponte_diff}
 \end{figure}
 
@@ -337,11 +388,15 @@ This brings a total of 801. At first glance, we can see that for the implementat
 
 \section{Analysis for improvement}
 
-For the time being the platform is implemented so as to allow new middleware additions to be simple, but there are areas where we can modularize the structure even more. Taking again the example of figure~\ref{fig:fiware_ponte_diff}, we can see there are three distinct areas for a publish request: the assembly of the structure that will be sent, sending it using a certain communication protocol, and registering any relevant information from the response to implement metrics. Our goal is for this to become generic, so that only the structure assembly is required. 
+For the time being the platform is implemented so as to allow new middleware additions to be simple, but there are areas where we can modularize the structure even more. Taking again the example of figure~\ref{fig:fiware_ponte_diff}, we can see there are three distinct areas for a publish request: the assembly of the structure that will be sent, sending it using a certain communication protocol, and registering any relevant information from the response to implement metrics. Our goal is for this to become generic, so that only the structure assembly is required.
+
+For the time being, the platform is restricted to running in single threaded mode, but we intend to add multi-threaded support to simulate several simultaneous publishers. Also, other metrics may need to be added, some of them protocol specific, to better compare different middlewares with the same communication protocol. 
 
 \section{Conclusion}
 
+In this paper, we proposed a scalable architecture for middleware benchmarking that target pub/sub communication scenarios. We identified the common aspects between different middlewares, and factorized them, so as to avoid repeating the same steps across different experiments. We then created a platform based on this architecture and on previous experiments conducted with OM2M. After making sure it provided good metrics and results, we proceeded to add a new middleware, FIWARE, and document the changes necessary for its implementation, both on an architecture level and on a platform level. We concluded that the architecture was adequate, and only one new class with 193 lines of code was necessary, with a lot of structural similarities between them. We continued this process with the addition of Ponte, and it proved again to be very similar to the previous two, with 88 new lines of code. On both occasions, the process was significantly quicker than it would have been if we were to create a specific application from scratch just for a single middleware. To prove the validity of our platform, we conducted two tests with different variables and obtained results with ease and, more importantly, assuring the same conditions across experiments, due to the nature of the application itself. This will allow for future users and researchers to have common ground in different tests, enabling a more direct comparison between them.
 
+Future work should focus on better modularization for an easier implementation, multi-threaded support, and lower-level metrics on the TCP level. 
 
 % trigger a \newpage just before the given reference
 % number - used to balance the columns on the last page
