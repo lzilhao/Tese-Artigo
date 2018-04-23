@@ -52,6 +52,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{url}
 \usepackage{hyperref}
+\usepackage[all]{hypcap} % Makes hyperref links go to image instead of label
 \usepackage{graphicx}
 % Packages for listings and color for code excerpts
 \usepackage{listings}
@@ -157,20 +158,16 @@ IoT middleware aims to bridge the gap between data producers and data consumers.
 
 To address these difficulties, we propose a tool that enables multiple comparisons across different middleware solutions in an efficient manner. We extend our previous work and propose a generic architecture from which will stem a modular tool in which the benchmarks can be run. The main benefits of such a tool are twofold: to provide a common ground in which the different middleware solutions can be benchmarked to ensure equal an playing field, and to reduce the cost of trying out subsequent middleware solutions.  
 
-
-\section{Solution Evolution and Requirements}
-
 In one of our previous works~\cite{cardoso_benchmarking_2017}, we set off to obtain a set of qualitative and quantitative metrics suited for benchmarking IoT middleware and to apply a test methodology using those metrics to FIWARE~\cite{FIWARE27:online} and ETSI M2M~\cite{ETSIWelc14:online}. %Following this, they were able to use said methodology by making a comparison of two IoT middleware platforms, . 
 We used a smart cities scenario with the publish-subscribe communication model, which is fairly common in IoT. The IoT middleware to benchmark was treated as a black-box, disregarding information about internal implementation. This eases the benchmarking process and the creation of a common benchmarking tool, but can cause the middleware to be used sub-optimally. This is a necessary step in an effort to generalize the process, and reflects to a large extent the typical user's approach. A qualitative analysis was conducted with the goal of identifying certain middleware functionalities which are relevant for IoT applications and ease their development, such as documentation availability and which communication models are supported. This type of qualitative analysis and metrics requires a case-by-case study of each broker, and although it cannot be automated within a benchmarking platform it should be considered globally when comparing IoT middleware. A quantitative analysis was performed using metrics relevant for communication scenarios, particularly mass publication of resources using a publish-subscribe model, such as publish time, which is defined as the elapsed time since sending the HTTP request and receiving the HTTP response. In that work, the measurements were specific to the communication model and protocol, something we  try to avoid in this paper by providing generic metrics that are protocol independent. For protocols that share a communication model this should be relatively straightforward, but could be more complicated for instance when one IoT middleware uses HTTP and another uses MQTT\@.
 
 In \cite{pereira_benchmarking_2018}, we improve upon the previous experiment by using a controlled environment %but using OM2M, which is an implementation of the oneM2M~\cite{oneM2MHo30:online} standards. A common application was created for each of the 
 and evaluating Fi-Ware and OM2M~\cite{oneM2MHo30:online} with different protocol configurations -- Fiware, OM2M with HTTP, OM2M with CoAP, and OM2M with MQTT. That paper identifies where and how data is published and highlights some concerns for benchmarking including different client capabilities and Java Virtual Machine (JVM) configurations. %, which will mainly concern application development. 
 We address these concerns in this paper by developing middleware-specific modules and re-utilizing them for subsequent measurements. One client capablility concern is the possibility that multi-connection capable clients cause unfair middleware comparisons. The generic tool we develop in this paper will have to consider this in the client development. One concern with JVM configurations is that different packages implement varied optimizations, creating additional variability across operating systems and depending on whether they are client or server VMs. To avoid unfair comparisons, we must configure our application so that it requires a specific setup, such as Server mode, ensuring a level playing field.
-%AAG: we should say also how our platform deals with this.
-%LZ: adicionei uma maneira de lidar com o problema
 
+\section{Related Work}
 
-
+There are few studies comparing IoT middleware performance. Those that exist typically focus on the specifics of each middleware solution and thus are not generic -- e.g. Kafka vs. RabbitMQ~\cite{dobbelaere_kafka_2017} for Pub/Sub and ZStreaming vs. Kafka Streaming~\cite{fernandez-rodraguez_benchmarking_2017} for streaming sensor data. We found two benchmarking tools for IoT middleware. However, one is focused on stream data processing~\cite{shukla_riotbench:_2017} and the other~\cite{zhang_psbench:_2014}, despite providing a publish/subscribe spcecific workload generator, uses a simplistic model for abstracting the middleware which still leaves much of the burden to the programmer that wants to benchmark a new middleware. Finally, we also found benchmarking tools for other, cloud based, software. In~\cite{varghese_doclite:_2016}, the authors propose an architecture and tool for benchmarking Docker containers, detailing on the specifics of benchmarking containerized applications and extensively testing their tool. In~\cite{iosup_iaas_2014}, the authors discuss different issues of benchmarking Infrastructure-as-a-Service solutions for the Cloud, specifying benchmarking components, design features, and open challenges. Although these tools cannot be used directly for publish/subscribe IoT middleware, we feel they are solid references for benchmarking in general and for IoT middleware benchmarking in particular.
 
 \section{Solution}
 
@@ -227,37 +224,24 @@ Generated traffic is measured by dividing the publish structure of each message 
 	}
 }
 \end{lstlisting}
-%AAG: THERE IS SOMETHING MISSING HERE!!!
-%LZ: uma explicação do JSON?
-The \textbf{con:} field is the message itself, \textbf{cnf} is the data format and \textbf{rn:} the time at which was sent. There are more field that can go into the request, and different middlewares will have vastly different structures. This will be returned to the calling publish method, in order for it to know the payload size for that particular middleware publish request. Since this class extends the \textbf{middleware} superclass, this method is always present and always has the same return values, providing generic metrics.
+This will be returned to the calling publish method, in order for it to know the payload size for that particular middleware publish request. Since this class extends the \textbf{middleware} superclass, this method is always present and always has the same return values, providing generic metrics.
 Following this, we have the failed and successful publishes. In order to determine whether a certain request was successful or not, the response provided by the broker must be analysed. Naturally, this is protocol dependent, so in order to create a layer of abstraction, the basic communication methods of the used protocol, such as \textbf{POST} or \textbf{PUT} must return the broker response, in order for the Om2m class to be able to interpret if a publish was successful or not. This way, it will return to the main class a generic success or failure indicator, independent of protocol. 
-Then, we have subscribe time which is implemented differently, as it potentially relies on times registered at different machines. In order for the subscriber to register the times, a listener must be created for the protocol it is expecting to receive. This listener will be in charge of registering the times at which the notification arrive, meaning this metric is implemented at the protocol level. Lastly, we have the sizes for the publish structures and for the URL\@. This metric aims to enable a user to see how much data needs to be added to the message that they want to send, as it can be quite larger than the message itself, imposing a bigger overhead.
+Then, we have subscribe time which is implemented differently, as it potentially relies on times registered at different machines. The subscriber must create a listener for the protocol it is expecting to receive in order to register the times. This listener will be in charge of registering the times at which the notifications arrive, meaning this metric is implemented at the protocol level. Lastly, we have the sizes for the publish structures and for the URL\@. This metric aims to enable a user to see how much data needs to be added to the message that they want to send, as it can be quite larger than the message itself, imposing a bigger overhead.
 
 The goal of the \textbf{Middleware} superclass is to provide the methods that all middlewares are expected to implement and any attributes that are common as well. We therefore chose to have an \textbf{uri} to identify where it will be located on the network. The \textbf{publish()} and \textbf{subscribe()} methods are evident as we are dealing with publish/subscribe scenarios. The \textbf{createInitialSetup()} method is for registering resources, such as applications in the case of OM2M, the number of which is defined by the user. Next, we have \textbf{listen()}, which enables the subscriber to receive and parse notifications as needed, and register their arrival times. Finally, the \textbf{destroy()} method provides a way to clear any created resources so that the experiment may be conducted again on a clean broker. 
 
 Then, we come to the protocol classes. Currently, only HTTP is implemented in the \textbf{RestHttpClient()}, but others may be added in the future, such as CoAP or MQTT\@. The four methods in the \textbf{RestHttpClient} class are ubiquitous across several applications, and typically most middelwares which rely on HTTP will make use of these. 
-%AAG: WHICH FOUR METHODS? DOES THIS REFER TO THE PREVIOUS PARAGRAPH?
-%LZ: Eram os métodos do HTTP, já pus uma alteração
 
 \section{Evaluation}
 
 \subsection{Adding new middlewares}
 
-The platform development was conducted keeping in mind the extensibility to new middlewares. %, therefore it was made to be as generic as possible and to facilitate any new addition. 
-However, during such an extension needs which were not accounted for can show up, and the platform must evolve to be able to accommodate them. In this section, we will see the changes to the architecture, and the differences and similarities between the implementation of OneM2M and two additional middlewares: FIWARE and Ponte. We will also highlight how much was reusable in terms of code and overall structure, and attempt to quantify the changes through the number of lines of code. 
+The platform development was conducted keeping in mind the extensibility to new middlewares. 
+However, during such an extension, needs which were not accounted for can show up, and the platform must evolve to be able to accommodate them. In this section, we will see the changes to the architecture, and the differences and similarities between the implementation of OneM2M and two additional middlewares: FIWARE and Ponte. We will also highlight how much was reusable in terms of code and overall structure, and attempt to quantify the changes through the number of lines of code. 
 
 \subsubsection{FIWARE}
 
-We decided to add the FIWARE middleware as a result of previous work and greater familiarity with it. The class diagram is similar to that in figure~\ref{fig:class_diagram_om2m}, with the difference being the new Fiware class, visible in figure~\ref{fig:class_diagram_fiware}.
-
-\begin{figure}[htbp!]
-  \centering
-  \includegraphics[width=0.5\columnwidth]{figures/class_diagram_fiware.eps}
-  \caption{Fiware class diagram}
-  \label{fig:class_diagram_fiware}
-\end{figure}
-
-Since it is an extension of the \textbf{Middleware} superclass, it shares the five methods and attributes with \textbf{Om2m}; the rest is specific to this class, with a similar structure. The superclass methods will call the specific functions to bridge the gap to the communication protocol, in this case HTTP. Starting with \textbf{publish()}, the structure is identical, with only 4 lines out of 22 of code being different between both middlewares, which merely correspond to differing function calls and variable names. An Om2m publish calls the \textbf{createContentInstance()} function to create a new instance in a previously created container in an application, receiving the intended message and constructing a JSON payload in accordance to its standards, and sending it via an HTTP POST. Similarly, Fiware uses the \textbf{updateEntity()} method to update the current status of an entity, also constructing an appropriate JSON, but sending it with an HTTP PATCH. A key detail to note here is that using this method Fiware does not retain memory of previous status, as it is overwritten. Both of these methods return the JSON payloads and the HTTP response, and register the times at which the publishes were sent. The \textbf{subscribe()} method in both implementations is similar to this, but Fiware uses HTTP POST instead of a PATCH request.
+We decided to add the FIWARE middleware as a result of previous work and greater familiarity with it. The class diagram is similar to that in figure~\ref{fig:class_diagram_om2m}. Since it is an extension of the \textbf{Middleware} superclass, it shares the five methods and attributes with \textbf{Om2m}; the rest is specific to this class, with a similar structure. The superclass methods will call the specific functions to bridge the gap to the communication protocol, in this case HTTP\@. Starting with \textbf{publish()}, the structure is identical, with only 4 lines out of 22 of code being different between both middlewares, which merely correspond to differing function calls and variable names. An Om2m publish calls the \textbf{createContentInstance()} function to create a new instance in a previously created container in an application, receiving the intended message and constructing a JSON payload in accordance to its standards, and sending it via an HTTP POST\@. Similarly, Fiware uses the \textbf{updateEntity()} method to update the current status of an entity, also constructing an appropriate JSON, but sending it with an HTTP PATCH. A key detail to note here is that using this method Fiware does not retain memory of previous status, as it is overwritten. Both of these methods return the JSON payloads and the HTTP response, and register the times at which the publishes were sent. The \textbf{subscribe()} method in both implementations is similar to this, but Fiware uses HTTP POST instead of a PATCH request.
 
 The \textbf{listen()} function is the same in both, and creates an HTTP server for the subscriber to listen and parse the notifications.
 
@@ -271,15 +255,7 @@ But what if we wanted to use Fiware with memory? What changes would be required 
 
 \subsubsection{Ponte}
 
-In figure~\ref{fig:class_diagram_ponte} we can see the class diagram for Ponte. Since it is another implementation of the middleware superclass, it shares the same methods, so they are not shown in the image.
-
-\begin{figure}[htbp!]
-  \centering
-  \includegraphics[width=0.5\columnwidth]{figures/class_diagram_ponte.eps}
-  \caption{Class diagram for Ponte}
-  \label{fig:class_diagram_ponte}
-\end{figure}
-
+Ponte is another implementation of the middleware superclass, so it shares the same methods as FIWARE and OM2M.
 As before, there is an URI identifier and two variables that indicate how many resources and attributes per resource this middleware instance will take. With Ponte, only the \textbf{publish()} and \textbf{createInitialSetup()} methods from the \textbf{Middleware} superclass were implemented. The reason for this is that there was no need to create an additional abstraction layer between the the middleware specific methods and the publish method as before with other implementations. A simple HTTP PUT is required with the target resource and attribute in the URL, and the value as payload, without any need for JSON or XML assembly.
 
 \textbf{subscribe()} and \textbf{listen()} were not implemented as there is no way for the broker to notify a subscriber through HTTP, only through GET polling originating from the subscriber. Thus, Ponte does not fully follow a  publish/subscribe communication model.
@@ -287,7 +263,7 @@ As before, there is an URI identifier and two variables that indicate how many r
 There is no obvious way of deleting a resource, so \textbf{destroy} was also not implemented. The most obvious way to do clean the deployment being a broker restart. 
 
 \subsection{Impact on Code}
-%AAG: I DON'T LIKE THIS TITLE, BUT I COULD NOT THINK OF A BETTER ONE
+
 In order to better show the similarities between implementations, let's look at the publish methods themselves. In figure~\ref{fig:fiware_ponte_diff} we can see a comparison between both implementations for each middleware. The highlighted lines correspond to the differences.
 
 \begin{figure}[htbp!]
@@ -299,16 +275,8 @@ In order to better show the similarities between implementations, let's look at 
 
 The structure is basically identical, with the exception that Fiware calls an additional auxiliary method, \textbf{updateEntity()}, that assembles the JSON for the HTTP request that will execute the publish. Since Ponte does not need to assemble a payload in such a way, \textbf{put()} is called directly. This enabled an easy implementation for Ponte by simply analyzing what had been previously done for FIWARE, speeding up the process of adding a new middleware.
 
-We can attempt to quantify the changes needed for a new implementation by looking at the lines of code. The distribution of lines per class is as follows:
-% \begin{itemize}
-% \item Main - 51
-% \item Load - 119
-% \item Middleware - 16
-% \item Metrics - 136
-% \item Ponte - 88
-% \item Fiware - 193
-% \item Om2m - 198
-% \end{itemize}
+We can attempt to quantify the changes needed for a new implementation by looking at the lines of code. The distribution of lines per class can be seen in table~\ref{tab:lines_code}.
+
 \begin{table}[htbp!]
   \centering
   \begin{tabular}{|c|c|}
@@ -338,7 +306,7 @@ We can attempt to quantify the changes needed for a new implementation by lookin
 
 This brings a total of 801. At first glance, we can see that for the implementation of single middleware, the effort required can vary, with Ponte only needing 88 lines of new code. Nevertheless, there is a great deal that can be reused across all of them, greatly easing the process. As we have seen previously, not only are the structures similar, but some of the methods are similar as well, such as with the \textbf{publish()} methods between Ponte and Fiware.
 
-\subsection{Benchmarking Platform Validation}
+\section{Benchmarking Platform Validation}
 
 The goal here is not to use the results to evaluate the performance of the platform, or to make a comparison between other middlewares. Rather, we want to use the results to validate the platform itself, and show what types of information we can extract from these tests, while still keeping the platform generic.
 
@@ -358,37 +326,7 @@ The test consisted of 20000 publishes of 22 byte messages, at a maximum rate of 
   \label{fig:subscribe_times}
 \end{figure}
 
-A few extra metrics are available for each of them: the generated TCP traffic, total publish time, number of failed and successful publishes, size of a publish structure, and size of the URL.
-
-% \subsubsection{FIWARE}
-% \begin{itemize}
-% \item Generated traffic: 5.42 KB/s
-% \item Failed publishes: 0
-% \item Successful Publishes: 20000
-% \item Total publish time: 259 seconds
-% \item Size of a publish structure: 70 bytes
-% \item Size of the URL: 51 bytes
-% \end{itemize}
-
-% \subsubsection{OM2M}
-% \begin{itemize}
-% \item Generated traffic: 6.75 KB/s
-% \item Failed publishes: 0
-% \item Successful Publishes: 20000
-% \item Total publish time: 283 seconds
-% \item Size of a publish structure: 95 bytes
-% \item Size of the URL: 58 bytes
-% \end{itemize}
-
-% \subsubsection{Ponte}
-% \begin{itemize}
-% \item Generated traffic: 2.12 KB/s
-% \item Failed publishes: 0
-% \item Successful Publishes: 20000
-% \item Total publish time: 208 seconds
-% \item Size of a publish structure: 22 bytes
-% \item Size of the URL: 56 bytes
-% \end{itemize}
+A few extra metrics are available for each of them: the generated TCP traffic, total publish time, number of failed and successful publishes, size of a publish structure, and size of the URL, all visible in table~\ref{tab:misc_metrics_all_22}.
 
 \begin{table}[htbp!]
   \centering
@@ -431,37 +369,7 @@ Changing parameters is merely altering the value of a few variables, depending o
   \label{fig:subscribe_times_10000}
 \end{figure}
 
-The application can easily handle even large messages sizes such as in figure~\ref{fig:publish_times_10000}. Again, the additional metrics generated were the following:
-
-% \subsubsection{FIWARE}
-% \begin{itemize}
-% \item Generated traffic: 533.21 KB/s
-% \item Failed publishes: 0
-% \item Successful Publishes: 20000
-% \item Total publish time: 380 seconds
-% \item Size of a publish structure: 10060 bytes
-% \item Size of the URL: 51 bytes
-% \end{itemize}
-
-% \subsubsection{OM2M}
-% \begin{itemize}
-% \item Generated traffic: 56.27 KB/s
-% \item Failed publishes: 0
-% \item Successful Publishes: 20000
-% \item Total publish time: 3587 seconds
-% \item Size of a publish structure: 10085 bytes
-% \item Size of the URL: 58 bytes
-% \end{itemize}
-
-% \subsubsection{Ponte}
-% \begin{itemize}
-% \item Generated traffic: 756.53 KB/s
-% \item Failed publishes: 0
-% \item Successful Publishes: 20000
-% \item Total publish time: 267 seconds
-% \item Size of a publish structure: 10012 bytes
-% \item Size of the URL: 56 bytes
-% \end{itemize}
+The application can easily handle even large messages sizes such as in figure~\ref{fig:publish_times_10000}. The additional metrics can be seen in table~\ref{tab:misc_metrics_all_10012}.
 
 \begin{table}[htbp!]
   \centering
@@ -494,12 +402,6 @@ We can observe that all middlewares use similar amount of Bytes for the resource
 For the time being the platform is implemented so as to allow extensions to new middleware to be straighforward and low effort, but there are areas where we can modularize the structure further. Taking again the example of figure~\ref{fig:fiware_ponte_diff}, we can see there are three distinct areas for a publish request: the assembly of the structure that will be sent, sending it using a certain communication protocol, and registering any relevant information from the response to implement metrics. Our goal is to cerate a further abstraction, so that only the structure assembly is required. 
 
 Also, the platform is currently restricted to run in single threaded mode, but we intend to add multi-threaded support to simulate several simultaneous publishers. Also, additional metrics may need to be added, some of them protocol specific, to better compare different middlewares with the same communication protocol. 
-
-
-\section{Related Work}
-
-There are few studies comparing IoT middleware performance. Those that exist typically focus on the specifics of each middleware solution and thus are not generic -- e.g. Kafka vs. RabbitMQ~\cite{dobbelaere_kafka_2017} for Pub/Sub and ZStreaming vs. Kafka Streaming~\cite{fernandez-rodraguez_benchmarking_2017} for streaming sensor data. We found two benchmarking tools for IoT middleware. However, one is focused on stream data processing~\cite{shukla_riotbench:_2017} and the other~\cite{zhang_psbench:_2014}, despite providing a publish/subscribe spcecific workload generator, uses a simplistic model for abstracting the middleware which still leaves much of the burden to the programmer that wants to benchmark a new middleware. Finally, we also found benchmarking tools for other, cloud based, software. In~\cite{varghese_doclite:_2016}, the authors propose an architecture and tool for benchmarking Docker containers, detailing on the specifics of benchmarking containerized applications and extensively testing their tool. In~\cite{iosup_iaas_2014}, the authors discuss different issues of benchmarking Infrastructure-as-a-Service solutions for the Cloud, specifying benchmarking components, design features, and open challenges. Although these tools cannot be used directly for publish/subscribe IoT middleware, we feel they are solid references for benchmarking in general and for IoT middleware benchmarking in particular.
-
 
 \section{Conclusion}
 
