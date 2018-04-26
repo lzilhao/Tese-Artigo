@@ -151,20 +151,20 @@ Porto, Portugal
 % As a general rule, do not put math, special symbols or citations
 % in the abstract
 \begin{abstract}
-  With the rise in popularity of the Internet of Things in all kinds of different application scenarios, various middleware solutions have appeared with different use-cases and optimizations in mind. The design space for any specific deployment is thus increasingly large, but little objective support exists to help choosing the best middleware for each use-case. From this stems the need to evaluate how different IoT middleware solutions perform in different use-cases. Measuring the performance of IoT middleware in a way that 1) provides common ground between experiments, and 2) makes it easier to integrate new IoT middleware in the benchmark is not straightforward. In this paper we propose a generic architecture for evaluating the performance of publish/subscribe middleware, develop a tool that implements this architecture, and show the benefits in time and effort that can be reaped from our approach. We further validate our approach by using the architecture and tool to benchmark different middleware solutions, taking lessons from the changes we had to do to the architecture in order to support new middleware, and attempting to quantify the effort through lines of code and to qualitatively assess code structure similarity. 
+  With the rise in popularity of the Internet of Things in all kinds of different application scenarios, various middleware solutions have appeared with different use-cases and optimizations in mind. The design space for any specific deployment is thus increasingly large, but little objective support exists to help choose the best middleware for each use-case. From this stems the need to evaluate how different IoT middleware solutions perform in different use-cases. Measuring the performance of IoT middleware in a way that 1) provides common ground between experiments, and 2) makes it easier to integrate new IoT middleware in the benchmark is not straightforward. In this paper we propose a generic architecture for evaluating the performance of publish/subscribe middleware, develop a tool that implements this architecture, and show the benefits in time and effort that can be reaped from our approach. We further validate our approach by using the architecture and tool to benchmark different middleware solutions, taking lessons from the changes we had to do to the architecture in order to support new middleware, and attempting to quantify the effort through lines of code and to qualitatively assess code structure similarity. 
 \end{abstract}
 
 \section{Introduction}
 
-IoT middleware aims to bridge the gap between data producers and data consumers. Internet of Things encompasses a wide variety of different applications and services with coreespondignly different requirements. Each of these applications would ideally require a middleware and sensor network tailored perfectly to its needs. However, this would be a waste of resources. Therefore, application developers will choose an existing middleware that suits their needs. The question then becomes: how to choose the most adequate middleware for the task at hand? There is a large number~\cite{razzaque_middleware_2016} of available middleware solutions to choose from, which makes the selection process resource- and time-consuming. A comparison must be made between different middleware solutions to evaluate which is better suited for which task. But then the problem arises of how to make the evaluation, given that performance measuring is not trivial and that common ground must exist for the comparison to be valid. Furthermore, since we have a large number of middleware solutions to choose from, ensuring such common ground across different experiments is very cumbersome and error prone. 
+IoT middleware aims to bridge the gap between data producers and data consumers. Internet of Things encompasses a wide variety of different applications and services with correspondingly different requirements. Each of these applications would ideally require a middleware and sensor network tailored perfectly to its needs. However, this would be a waste of resources. Therefore, application developers will choose an existing middleware that suits their needs. The question then becomes: how to choose the most adequate middleware for the task at hand? There is a large number~\cite{razzaque_middleware_2016} of available middleware solutions to choose from, which makes the selection process resource- and time-consuming. A comparison must be made between different middleware solutions to evaluate which is better suited for which task. But then the problem arises of how to make the evaluation, given that performance measuring is not trivial and that common ground must exist for the comparison to be valid. Furthermore, since we have a large number of middleware solutions to choose from, ensuring such common ground across different experiments is very cumbersome and error prone. 
 
 To address these difficulties, we propose a tool that enables multiple comparisons across different middleware solutions in an efficient manner. We extend our previous work and propose a generic architecture from which will stem a modular tool in which the benchmarks can be run. The main benefits of such a tool are twofold: to provide a common ground in which the different middleware solutions can be benchmarked to ensure equal an playing field, and to reduce the cost of trying out subsequent middleware solutions.  
 
-In one of our previous works~\cite{cardoso_benchmarking_2017}, we set off to obtain a set of qualitative and quantitative metrics suited for benchmarking IoT middleware and to apply a test methodology using those metrics to FIWARE~\cite{FIWARE27:online} and ETSI M2M~\cite{ETSIWelc14:online}. %Following this, they were able to use said methodology by making a comparison of two IoT middleware platforms, . 
+In one of our previous works~\cite{cardoso_benchmarking_2017}, we set off to obtain a set of qualitative and quantitative metrics suited for benchmarking IoT middleware and to apply a test methodology using those metrics to Fiware~\cite{FIWARE27:online} and ETSI M2M~\cite{ETSIWelc14:online}. %Following this, they were able to use said methodology by making a comparison of two IoT middleware platforms, . 
 We used a smart cities scenario with the publish-subscribe communication model, which is fairly common in IoT. The IoT middleware to benchmark was treated as a black-box, disregarding information about internal implementation. This eases the benchmarking process and the creation of a common benchmarking tool, but can cause the middleware to be used sub-optimally. This is a necessary step in an effort to generalize the process, and reflects to a large extent the typical user's approach. A qualitative analysis was conducted with the goal of identifying certain middleware functionalities which are relevant for IoT applications and ease their development, such as documentation availability and which communication models are supported. This type of qualitative analysis and metrics requires a case-by-case study of each broker, and although it cannot be automated within a benchmarking platform it should be considered globally when comparing IoT middleware. A quantitative analysis was performed using metrics relevant for communication scenarios, particularly mass publication of resources using a publish-subscribe model, such as publish time, which is defined as the elapsed time since sending the HTTP request and receiving the HTTP response. In that work, the measurements were specific to the communication model and protocol, something we  try to avoid in this paper by providing generic metrics that are protocol independent. For protocols that share a communication model this should be relatively straightforward, but could be more complicated for instance when one IoT middleware uses HTTP and another uses MQTT\@.
 
 In \cite{pereira_benchmarking_2018}, we improve upon the previous experiment by using a controlled environment %but using OM2M, which is an implementation of the oneM2M~\cite{oneM2MHo30:online} standards. A common application was created for each of the 
-and evaluating Fi-Ware and OM2M~\cite{oneM2MHo30:online} with different protocol configurations -- Fiware, OM2M with HTTP, OM2M with CoAP, and OM2M with MQTT. That paper identifies where and how data is published and highlights some concerns for benchmarking including different client capabilities and Java Virtual Machine (JVM) configurations. %, which will mainly concern application development. 
+and evaluating Fiware and OM2M~\cite{oneM2MHo30:online} with different protocol configurations -- Fiware, OM2M with HTTP, OM2M with CoAP, and OM2M with MQTT. That paper identifies where and how data is published and highlights some concerns for benchmarking including different client capabilities and Java Virtual Machine (JVM) configurations. %, which will mainly concern application development. 
 We address these concerns in this paper by developing middleware-specific modules and re-utilizing them for subsequent measurements. One client capablility concern is the possibility that multi-connection capable clients cause unfair middleware comparisons. The generic tool we develop in this paper will have to consider this in the client development. One concern with JVM configurations is that different packages implement varied optimizations, creating additional variability across operating systems and depending on whether they are client or server VMs. To avoid unfair comparisons, we must configure our application so that it requires a specific setup, such as Server mode, ensuring a level playing field.
 
 \section{Related Work}
@@ -196,7 +196,7 @@ Next, we have the \textit{communication block} where the protocols, such as HTTP
 During the test cycle, a set of defined values, such as times and publish request sizes, will be stored and fed into the \textit{metrics block}, which will extract metrics from them, such as average publish time or generated traffic. New metrics can be added without affecting those that are already implemented, also keeping result compatibility. 
 
 \subsection{OM2M Implementation}
-In an initial step, we create an application to benchmark the OM2M middleware by abstracting our previous work~\cite{pereira_benchmarking_2018,cardoso_benchmarking_2017}, while keeping it as generic as possible to enable future middleware additions, following our architecture guidelines. This resulted in the structure visible in~\ref{fig:class_diagram_om2m}.
+In an initial step, we created an application to benchmark the OM2M middleware by abstracting our previous work~\cite{pereira_benchmarking_2018,cardoso_benchmarking_2017}, while keeping it as generic as possible to enable future middleware additions, following our architecture guidelines. This resulted in the structure visible in~\ref{fig:class_diagram_om2m}.
 
 \begin{figure}[htbp!]
   \centering
@@ -205,7 +205,7 @@ In an initial step, we create an application to benchmark the OM2M middleware by
   \label{fig:class_diagram_om2m}
 \end{figure}
 
-Since the load class will be performing the actual requests, it will also call upon the metrics class to perform get the results from the measurements. The load will consist of a certain number of publishes, with a certain message, at a given rate. All can be easily defined by the user. It is implemented by way of a loop, with each cycle corresponding to a publish request, with sleeps in between to meet the desired rate.
+Since the load class will be performing the actual requests, it will also call upon the metrics class to get the results from the measurements. The load will consist of a certain number of publishes, with a certain message, at a given rate. All can be easily defined by the user. It is implemented by way of a loop, with each cycle corresponding to a publish request, with sleeps in between to meet the desired rate.
 
 \begin{figure}[htbp!]
   \centering
@@ -239,11 +239,11 @@ Then, we come to the protocol classes. Currently, only HTTP is implemented in th
 \subsection{Adding new middlewares}
 
 The platform development was conducted keeping in mind the extensibility to new middlewares. 
-However, during such an extension, needs which were not accounted for can show up, and the platform must evolve to be able to accommodate them. In this section, we will see the changes to the architecture, and the differences and similarities between the implementation of OneM2M and two additional middlewares: FIWARE and Ponte. We will also highlight how much was reusable in terms of code and overall structure, and attempt to quantify the changes through the number of lines of code. 
+However, during such an extension, needs which were not accounted for can show up, and the platform must evolve to be able to accommodate them. In this section, we will see the changes to the architecture, and the differences and similarities between the implementation of OM2M and two additional middlewares: Fiware and Ponte. We will also highlight how much was reusable in terms of code and overall structure, and attempt to quantify the changes through the number of lines of code. 
 
-\subsubsection{FIWARE}
+\subsubsection{Fiware}
 
-We decided to add the FIWARE middleware as a result of previous work and greater familiarity with it. The class diagram is similar to that in figure~\ref{fig:class_diagram_om2m}. Since it is an extension of the \textbf{Middleware} superclass, it shares the five methods and attributes with \textbf{Om2m}; the rest is specific to this class, with a similar structure. The superclass methods will call the specific functions to bridge the gap to the communication protocol, in this case HTTP\@.
+We decided to add the Fiware middleware as a result of previous work and greater familiarity with it. The class diagram is similar to that in figure~\ref{fig:class_diagram_om2m}. Since it is an extension of the \textbf{Middleware} superclass, it shares the five methods and attributes with \textbf{Om2m}; the rest is specific to this class, with a similar structure. The superclass methods will call the specific functions to bridge the gap to the communication protocol, in this case HTTP\@.
 % Starting with \textbf{publish()}, the structure is identical, with only 4 lines out of 22 of code being different between both middlewares, which merely correspond to differing function calls and variable names. An Om2m publish calls the \textbf{createContentInstance()} function to create a new instance in a previously created container in an application, receiving the intended message and constructing a JSON payload in accordance to its standards, and sending it via an HTTP POST\@. Similarly, Fiware uses the \textbf{updateEntity()} method to update the current status of an entity, also constructing an appropriate JSON, but sending it with an HTTP PATCH. A key detail to note here is that using this method Fiware does not retain memory of previous status, as it is overwritten. Both of these methods return the JSON payloads and the HTTP response, and register the times at which the publishes were sent. The \textbf{subscribe()} method in both implementations is similar to this, but Fiware uses HTTP POST instead of a PATCH request.
 % 
 % The \textbf{listen()} function is the same in both, and creates an HTTP server for the subscriber to listen and parse the notifications.
@@ -260,12 +260,12 @@ But what if we wanted to use Fiware with memory? What changes would be required 
 %
 \subsubsection{Ponte}
 
-Ponte is another implementation of the middleware superclass, so it shares the same methods as FIWARE and OM2M.
+Ponte is another implementation of the middleware superclass, so it shares the same methods as Fiware and OM2M.
 As before, there is an URI identifier and two variables that indicate how many resources and attributes per resource this middleware instance will take. With Ponte, only the \textbf{publish()} and \textbf{createInitialSetup()} methods from the \textbf{Middleware} superclass were implemented. The reason for this is that there was no need to create an additional abstraction layer between the the middleware specific methods and the publish method as before with other implementations. A simple HTTP PUT is required with the target resource and attribute in the URL, and the value as payload, without any need for JSON or XML assembly.
 
 \textbf{subscribe()} and \textbf{listen()} were not implemented as there is no way for the broker to notify a subscriber through HTTP, only through GET polling originating from the subscriber. Thus, Ponte does not fully follow a  publish/subscribe communication model.
 
-There is no obvious way of deleting a resource, so \textbf{destroy} was also not implemented. The most obvious way to do clean the deployment being a broker restart. 
+There is no obvious way of deleting a resource, so \textbf{destroy} was also not implemented. The most obvious way to clean the deployment is a broker restart. 
 
 \subsection{Impact on Code}
 
@@ -278,7 +278,7 @@ In order to better show the similarities between implementations, let's look at 
   \label{fig:fiware_ponte_diff}
 \end{figure}
 
-The structure is basically identical, with the exception that Fiware calls an additional auxiliary method, \textbf{updateEntity()}, that assembles the JSON for the HTTP request that will execute the publish. Since Ponte does not need to assemble a payload in such a way, \textbf{put()} is called directly. This enabled an easy implementation for Ponte by simply analyzing what had been previously done for FIWARE, speeding up the process of adding a new middleware.
+The structure is basically identical, with the exception that Fiware calls an additional auxiliary method, \textbf{updateEntity()}, that assembles the JSON for the HTTP request that will execute the publish. Since Ponte does not need to assemble a payload in such a way, \textbf{put()} is called directly. This enabled an easy implementation for Ponte by simply analyzing what had been previously done for Fiware, speeding up the process of adding a new middleware.
 
 We can attempt to quantify the changes needed for a new implementation by looking at the lines of code. The distribution of lines per class can be seen in table~\ref{tab:lines_code}.
 
@@ -300,7 +300,7 @@ We can attempt to quantify the changes needed for a new implementation by lookin
     \hline
     Fiware & 193 \\
     \hline
-    Om2m & 198 \\
+    OM2M & 198 \\
     \hline
   \end{tabular}
   \vspace{1mm}
@@ -315,7 +315,7 @@ This brings a total of 801. At first glance, we can see that for the implementat
 
 The goal here is not to use the results to evaluate the performance of the platform, or to make a comparison between other middlewares. Rather, we want to use the results to validate the platform itself, and show what types of information we can extract from these tests, while still keeping the platform generic.
 
-The test consisted of 20000 publishes of 22 byte messages, at a maximum rate of 100 publishes per second. The subscriber and the broker were located on the same machine, while the publisher was separate. They were connected through 100 MB/s Ethernet connections. In~\ref{fig:publish_times} we can see a comparison between the publish times of all three implemented middlewares. In~\ref{fig:subscribe_times} only FIWARE and OM2M are present, as it is not possible to measure the subscribe times with Ponte using HTTP. 
+The test consisted of 20000 publishes of 22 byte messages, at a maximum rate of 100 publishes per second. The subscriber and the broker were located on the same machine, while the publisher was separate. They were connected through 100 Mb/s Ethernet connections. In~\ref{fig:publish_times} we can see a comparison between the publish times of all three implemented middlewares. In~\ref{fig:subscribe_times} only Fiware and OM2M are present, as it is not possible to measure the subscribe times with Ponte using HTTP. 
 
 \begin{figure}[htbp!]
   \centering
@@ -327,7 +327,7 @@ The test consisted of 20000 publishes of 22 byte messages, at a maximum rate of 
 \begin{figure}[htbp!]
   \centering
   \includegraphics[width=\columnwidth]{figures/om2m_fiware_subscribe_times.png}
-  \caption{Subscribe times for Om2m and Fiware with 22 byte messages}
+  \caption{Subscribe times for OM2M and Fiware with 22 byte messages}
   \label{fig:subscribe_times}
 \end{figure}
 
@@ -337,7 +337,7 @@ A few extra metrics are available for each of them: the generated TCP traffic, t
   \centering
   \begin{tabular}{|c|c|c|c|}
     \hline 
-    \textbf{Metrics} & \textbf{FIWARE} & \textbf{OM2M} & \textbf{Ponte} \\
+    \textbf{Metrics} & \textbf{Fiware} & \textbf{OM2M} & \textbf{Ponte} \\
     \hline 
     Generated Traffic (KB/s) & 5.42 & 6.75 & 2.12 \\
     \hline 
@@ -370,7 +370,7 @@ Changing parameters is merely altering the value of a few variables, depending o
 \begin{figure}[htbp!]
   \centering
   \includegraphics[width=\columnwidth]{figures/om2m_fiware_subscribe_times_10000.png}
-  \caption{Subscribe times for Om2m and Fiware with 10012 byte messages}
+  \caption{Subscribe times for OM2M and Fiware with 10012 byte messages}
   \label{fig:subscribe_times_10000}
 \end{figure}
 
@@ -380,7 +380,7 @@ The application can easily handle even large messages sizes such as in figure~\r
   \centering
   \begin{tabular}{|c|c|c|c|}
     \hline 
-    \textbf{Metrics} & \textbf{FIWARE} & \textbf{OM2M} & \textbf{Ponte} \\
+    \textbf{Metrics} & \textbf{Fiware} & \textbf{OM2M} & \textbf{Ponte} \\
     \hline 
     Generated Traffic (KB/s) & 533.21 & 56.27 & 756.53 \\
     \hline 
@@ -401,7 +401,7 @@ The application can easily handle even large messages sizes such as in figure~\r
   \label{tab:misc_metrics_all_10012}
 \end{table}
 
-We can observe that all middlewares use similar amount of Bytes for the resource, but we can see significant differences in the generated traffic, especially for large payloads. A large disparity in the total publish time could also be identified for the OneM2M broker with large payloads. This is the type of issue that our benchmarking platform should enable to identify. 
+We can observe that all middlewares use similar amount of Bytes for the resource, but we can see significant differences in the generated traffic, especially for large payloads. A large disparity in the total publish time could also be identified for the OM2M broker with large payloads. This is the type of issue that our benchmarking platform should enable to identify. 
 
 \section{Limitations and Future Work}
 For the time being the platform is implemented so as to allow extensions to new middleware to be straighforward and low effort, but there are areas where we can modularize the structure further. Taking again the example of figure~\ref{fig:fiware_ponte_diff}, we can see there are three distinct areas for a publish request: the assembly of the structure that will be sent, sending it using a certain communication protocol, and registering any relevant information from the response to implement metrics. Our goal is to cerate a further abstraction, so that only the structure assembly is required. 
@@ -410,7 +410,7 @@ Also, the platform is currently restricted to run in single threaded mode, but w
 
 \section{Conclusion}
 
-In this paper, we proposed a scalable architecture for middleware benchmarking that targets pub/sub communication scenarios. We identified the common aspects between different middlewares, and factorized them, so as to avoid repeating the same steps across different experiments. We then created a platform based on this architecture and on previous experiments conducted with OM2M. After making sure it provided good metrics and results, we proceeded to add a new middleware, FIWARE, and document the changes necessary for its implementation, both on an architecture level and on a platform level. We concluded that the architecture was adequate, and only one new class with 193 lines of code was necessary, with a lot of structural similarities between them. We continued this process with the addition of Ponte, and it proved again to be very similar to the previous two, with 88 new lines of code. On both occasions, the process was significantly quicker than it would have been if we were to create a specific application from scratch just for a single middleware. To prove the validity of our platform, we conducted two tests with different variables and obtained results with ease and, more importantly, assuring the same conditions across experiments, due to the nature of the application itself. This will allow for future users and researchers to have common ground in different tests, enabling a more direct comparison between them.
+In this paper, we proposed a scalable architecture for middleware benchmarking that targets pub/sub communication scenarios. We identified the common aspects between different middlewares, and factorized them, so as to avoid repeating the same steps across different experiments. We then created a platform based on this architecture and on previous experiments conducted with OM2M. After making sure it provided good metrics and results, we proceeded to add a new middleware, Fiware, and document the changes necessary for its implementation, both on an architecture level and on a platform level. We concluded that the architecture was adequate, and only one new class with 193 lines of code was necessary, with a lot of structural similarities between them. We continued this process with the addition of Ponte, and it proved again to be very similar to the previous two, with 88 new lines of code. On both occasions, the process was significantly quicker than it would have been if we were to create a specific application from scratch just for a single middleware. To prove the validity of our platform, we conducted two tests with different variables and obtained results with ease and, more importantly, assuring the same conditions across experiments, due to the nature of the application itself. This will allow for future users and researchers to have common ground in different tests, enabling a more direct comparison between them.
 
 Future work should focus on better modularization for an easier implementation, multi-threaded support, and lower-level metrics on the TCP level. 
 
@@ -451,3 +451,4 @@ Future work should focus on better modularization for an easier implementation, 
 %%% End:
 
 
+ 
