@@ -51,8 +51,8 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage{url}
-\usepackage{hyperref}
-\usepackage[all]{hypcap} % Makes hyperref links go to image instead of label
+%\usepackage{hyperref}
+%\usepackage[all]{hypcap} % Makes hyperref links go to image instead of label
 \usepackage{graphicx}
 % Packages for listings and color for code excerpts
 \usepackage{listings}
@@ -144,6 +144,8 @@ Porto, Portugal
 %      \thanks{This article is a result of the project MobiWise,  SAICTPAC/0011/2015, supported by Portugal 2020 and the European Regional Development Fund. Research was carried out in the scope of R\&D Unit 50008 (UID/EEA/50008/2013), and financed by the applicable financial framework: Portugal 2020 and the European Regional Development Fund, FCT/MEC through national funds and when applicable co-funded by FEDER PT2020 partnership agreement.}
         \thanks{This work is a result of the projects: NanoSTIMA (NORTE-01-0145-FEDER-000016), supported by Norte Portugal Regional Operational Programme 2014/2020 (NORTE 2020), under the PORTUGAL 2020 Partnership Agreement, through the European Regional Development Fund (ERDF); MobiWise (POCI-01-0145/FEDER-016426), funded by the European Regional Development Fund (FEDER), through the Operational Competitiveness and Internationalization Programme (COMPETE 2020) and by National Funds (OE), through Fundação para a Ciência e Tecnologia, I.P.; and, SmartCityMules, UID/EEA/50008/2013, funded by the applicable financial framework (FCT/MCTES) (PIDDAC).}
 } 
+\IEEEpubid{\makebox[\columnwidth]{978-1-5386-4725-7/18/\$31.00 \copyright 2018 IEEE \hfill} \hspace{\columnsep}\makebox[\columnwidth]{ }}
+
 
 % make the title area
 \maketitle
@@ -180,7 +182,7 @@ There are few studies comparing IoT middleware performance. Those that exist typ
 
 To comply with the aforementioned requirements, we aim to create a modular architecture by factoring the common elements in the benchmarking applications. The general plan for our architecture can be seen in Fig.~\ref{fig:benchmark_architecture}.
 
-\begin{figure}[htbp!]
+\begin{figure}[tbp!]
   \centering
   \includegraphics[width=\linewidth]{figures/benchmark_architecture.eps}
   \caption{Main architecture building blocks}
@@ -201,7 +203,7 @@ During the test cycle, a set of defined values, such as times and publish reques
 \subsection{OM2M Implementation}
 In an initial step, we created an application to benchmark the OM2M middleware by abstracting our previous work~\cite{pereira_benchmarking_2018,cardoso_benchmarking_2017}, while keeping it as generic as possible to enable future middleware additions, following our architecture guidelines. This resulted in the structure visible in Fig.~\ref{fig:class_diagram_om2m}.
 
-\begin{figure}[htbp!]
+\begin{figure}[tbp!]
   \centering
   \includegraphics[width=\linewidth]{figures/class_diagram.eps}
   \caption{Class diagram for the initial platform stage}
@@ -210,7 +212,7 @@ In an initial step, we created an application to benchmark the OM2M middleware b
 
 Since the load class will be performing the actual requests, it will also call upon the metrics class to get the results from the measurements. The load will consist of a certain number of publishes, with a certain message, at a given rate. All can be easily defined by the user. It is implemented by way of a loop, with each cycle corresponding to a publish request, with sleeps in between to meet the desired rate.
 
-\begin{figure}[htbp!]
+\begin{figure}[tbp!]
   \centering
   \includegraphics[width=\linewidth]{figures/pub_sub_time.eps}
   \caption{Publish and subscribe times~\cite{cardoso_benchmarking_2017}}
@@ -274,7 +276,7 @@ There is no obvious way of deleting a resource, so \textbf{destroy} was also not
 
 In order to better show the similarities between implementations, let's look at the publish methods themselves. In Fig.~\ref{fig:fiware_ponte_diff} we can see a comparison between both implementations for each middleware. The highlighted lines correspond to the differences.
 
-\begin{figure}[htbp!]
+\begin{figure}[tbp!]
   \centering
   \includegraphics[width=\columnwidth]{figures/fiware_ponte_diff.png}
   \caption{Difference between Fiware (top) and Ponte (bottom) publish method}
@@ -283,8 +285,9 @@ In order to better show the similarities between implementations, let's look at 
 
 The structure is identical, with the exception that Fiware calls an additional auxiliary method, \textbf{updateEntity()}, that assembles the JSON for the HTTP request that will execute the publish. Since Ponte does not need to assemble a payload in such a way, \textbf{put()} is called directly. This enabled an easy implementation for Ponte by analyzing what had been previously done for Fiware, speeding up the process of adding a new middleware.
 
-\begin{table}[htbp!]
+\begin{table}[tbp!]
   \centering
+  \caption{Lines of code for each class}
   \begin{tabular}{|c|c|}
     \hline 
     \textbf{Class} & \textbf{Lines of code} \\
@@ -305,12 +308,11 @@ The structure is identical, with the exception that Fiware calls an additional a
     \hline
   \end{tabular}
   \vspace{1mm}
-  \caption{Lines of code for each class}
   \label{tab:lines_code}
 \end{table}
 
 We can attempt to quantify the changes needed for a new implementation by looking at the lines of code. The distribution of lines per class can be seen in Table~\ref{tab:lines_code}. 
-This adds up to a total of 801. At first glance, we can see that for the implementation of a single middleware the effort required varies, with Ponte only needing 88 lines of new code. Nevertheless, there is a great deal that can be reused across all of them, greatly easing the process. As we have seen previously, not only are the structures similar, but some of the methods are similar as well, such as with the \textbf{publish()} methods between Ponte and Fiware.
+This adds up to a total of 801. At first glance, we can see that for the implementation of a single middleware the effort required varies, with Ponte only needing 88 lines of new code. Nevertheless, there is a great deal that can be reused across all of them, greatly easing the process.% As we have seen previously, not only are the structures similar, but some of the methods are similar as well, such as with the \textbf{publish()} methods between Ponte and Fiware.
 
 \section{Benchmarking Platform Validation}
 
@@ -319,22 +321,23 @@ The goal here is not to evaluate the performance of the platform, or to make a c
 The test consisted of 20000 publishes of 22 byte messages, at a maximum rate of 100 publishes per second. The subscriber and the broker were located on the same machine, while the publisher was separate. They were connected through 100 Mb/s Ethernet connections. In Fig.~\ref{fig:publish_times} we can see a comparison between the publish times of all three implemented middlewares. In Fig.~\ref{fig:subscribe_times} only Fiware and OM2M are present, as the subscribe times with Ponte using HTTP polling depend on the configuration of the polling interval. 
 The other metrics are available in table~\ref{tab:misc_metrics_all_22} for each of them: the generated TCP traffic, total publish time, number of failed and successful publishes, size of a publish structure, and size of the URL.
 
-\begin{figure}[htbp!]
+\begin{figure}[tbp!]
   \centering
   \includegraphics[width=\columnwidth]{figures/om2m_fiware_ponte_publish_times.png}
   \caption{Publish times for all three middlewares with 22 byte messages}
   \label{fig:publish_times}
 \end{figure}
 
-\begin{figure}[htbp!]
+\begin{figure}[tbp!]
   \centering
   \includegraphics[width=\columnwidth]{figures/om2m_fiware_subscribe_times.png}
   \caption{Subscribe times for OM2M and Fiware with 22 byte messages}
   \label{fig:subscribe_times}
 \end{figure}
 
-\begin{table}[htbp!]
+\begin{table}[tbp!]
   \centering
+  \caption{Results with 22 byte messages}
   \begin{tabular}{|c|c|c|c|}
     \hline 
     \textbf{Metrics} & \textbf{Fiware} & \textbf{OM2M} & \textbf{Ponte} \\
@@ -354,20 +357,19 @@ The other metrics are available in table~\ref{tab:misc_metrics_all_22} for each 
     
   \end{tabular}
   \vspace{1mm}
-  \caption{Results with 22 byte messages}
   \label{tab:misc_metrics_all_22}
 \end{table}
 
 Changing parameters is merely altering the value of a few variables, depending on what the user wants. A second test was performed, using the same conditions as before, but with 10012 byte messages. The application can easily handle even large messages sizes such as in Fig.~\ref{fig:publish_times_10000}. The additional metrics can be seen in table~\ref{tab:misc_metrics_all_10012}. The platform would enable identifying with limited effort that OneM2M as configured would be less suited than the other two for periodic publications of a dataset with period less than 1 hour.
 
-\begin{figure}[htbp!]
+\begin{figure}[tbp!]
   \centering
   \includegraphics[width=\columnwidth]{figures/om2m_fiware_ponte_publish_times_10000.png}
   \caption{Publish times for all three middlewares with 10012 byte messages}
   \label{fig:publish_times_10000}
 \end{figure}
 
-\begin{figure}[htbp!]
+\begin{figure}[tbp!]
   \centering
   \includegraphics[width=\columnwidth]{figures/om2m_fiware_subscribe_times_10000.png}
   \caption{Subscribe times for OM2M and Fiware with 10012 byte messages}
@@ -375,8 +377,9 @@ Changing parameters is merely altering the value of a few variables, depending o
 \end{figure}
 
 
-\begin{table}[htbp!]
+\begin{table}[tbp!]
   \centering
+  \caption{Results with 10012 byte messages}
   \begin{tabular}{|c|c|c|c|}
     \hline 
     \textbf{Metrics} & \textbf{Fiware} & \textbf{OM2M} & \textbf{Ponte} \\
@@ -396,7 +399,6 @@ Changing parameters is merely altering the value of a few variables, depending o
     
   \end{tabular}
   \vspace{1mm}
-  \caption{Results with 10012 byte messages}
   \label{tab:misc_metrics_all_10012}
 \end{table}
 
